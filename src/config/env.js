@@ -5,6 +5,7 @@ dotenv.config({ path: new URL('../../.env', import.meta.url) });
 dotenv.config();
 
 const required = ['JWT_SECRET', 'MONGODB_URI'];
+const productionClientOrigin = 'https://iub-lfe-web.web.app';
 
 export function loadEnv() {
   const missing = required.filter((key) => !process.env[key]);
@@ -19,10 +20,13 @@ export const env = {
     process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production',
   port: Number(process.env.PORT) || 5000,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-  clientOrigins: (process.env.CLIENT_URL || 'http://localhost:5173')
-    .split(',')
-    .map((value) => value.trim().replace(/\/$/, ''))
-    .filter(Boolean),
+  clientOrigins: [
+    ...(process.env.CLIENT_URL || 'http://localhost:5173')
+      .split(',')
+      .map((value) => value.trim().replace(/\/$/, ''))
+      .filter(Boolean),
+    productionClientOrigin,
+  ].filter((origin, index, origins) => origins.indexOf(origin) === index),
   apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 5000}`,
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,

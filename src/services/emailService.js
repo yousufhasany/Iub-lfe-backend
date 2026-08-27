@@ -28,8 +28,12 @@ export async function sendMail({ to, subject, text, html }) {
   });
 }
 
+function publicSiteUrl() {
+  return env.clientOrigins?.[0] || env.clientUrl.split(',')[0].trim();
+}
+
 export async function sendVerificationEmail(user, token) {
-  const url = `${env.clientUrl}/verify-email/${token}`;
+  const url = `${publicSiteUrl()}/verify-email/${token}`;
   await sendMail({
     to: user.email,
     subject: 'Verify your IUB LFE account',
@@ -38,7 +42,7 @@ export async function sendVerificationEmail(user, token) {
 }
 
 export async function sendPasswordResetEmail(user, token) {
-  const url = `${env.clientUrl}/reset-password/${token}`;
+  const url = `${publicSiteUrl()}/reset-password/${token}`;
   await sendMail({
     to: user.email,
     subject: 'Reset your IUB LFE password',

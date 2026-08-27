@@ -1,0 +1,6 @@
+.env
+uploads
+tests
+src/seeds
+*.test.js
+.vercel

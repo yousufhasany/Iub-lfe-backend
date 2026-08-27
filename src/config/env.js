@@ -18,6 +18,10 @@ export const env = {
   isProd: process.env.NODE_ENV === 'production',
   port: Number(process.env.PORT) || 5000,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  clientOrigins: (process.env.CLIENT_URL || 'http://localhost:5173')
+    .split(',')
+    .map((value) => value.trim().replace(/\/$/, ''))
+    .filter(Boolean),
   apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 5000}`,
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,

@@ -4,8 +4,11 @@ import { logger } from './logger.js';
 
 export async function connectDb() {
   mongoose.set('strictQuery', true);
+  if (mongoose.connection.readyState === 1) return;
+
+  const timeout = env.isProd ? 12000 : 2500;
   try {
-    await mongoose.connect(env.mongoUri, { serverSelectionTimeoutMS: 2500 });
+    await mongoose.connect(env.mongoUri, { serverSelectionTimeoutMS: timeout });
     logger.info('Connected to MongoDB');
     return;
   } catch (err) {

@@ -4,8 +4,6 @@ import { connectDb } from '../src/config/db.js';
 import { ensureBootstrapAdmin } from '../src/services/authService.js';
 import { logger } from '../src/config/logger.js';
 
-loadEnv();
-
 const app = createApp();
 
 let bootPromise;
@@ -13,6 +11,7 @@ let bootPromise;
 async function boot() {
   if (!bootPromise) {
     bootPromise = (async () => {
+      loadEnv();
       await connectDb();
       await ensureBootstrapAdmin();
     })().catch((err) => {

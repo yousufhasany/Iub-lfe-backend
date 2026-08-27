@@ -51,7 +51,7 @@ export const updateProfileSchema = z.object({
     department: z.string().max(80).optional(),
     batch: z.string().max(20).optional(),
     bio: z.string().max(500).optional(),
-    fieldVisitYear: z.coerce.number().int().min(2000).max(2100).optional(),
+    fieldVisitYear: z.coerce.number().int().min(1997).max(2100).optional(),
     semesterId: z.string().optional(),
     groupId: z.string().optional(),
     venueId: z.string().optional(),

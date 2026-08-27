@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Semester } from '../models/Semester.js';
 import { Group } from '../models/Group.js';
@@ -12,30 +13,98 @@ const PROFILE_POPULATE = [
   { path: 'lfe.venue', select: 'name slug district' },
 ];
 
+function isObjectId(value) {
+  return mongoose.Types.ObjectId.isValid(value) && String(new mongoose.Types.ObjectId(value)) === String(value);
+}
+
+function parseGroupNumber(value) {
+  const n = Number(value);
+  if (Number.isInteger(n) && n >= 1 && n <= 25) return n;
+  return null;
+}
+
+async function ensureSemester(semesterId) {
+  const slug = String(semesterId || '').match(/^(summer|winter)-(\d{4})$/);
+  if (slug) {
+    const season = slug[1];
+    const year = Number(slug[2]);
+    const maxYear = new Date().getFullYear() + 1;
+    if (year < 1997 || year > maxYear) {
+      throw new ApiError(400, 'Choose an LFE semester from 1997 onward.', 'INVALID_SEMESTER');
+    }
+    try {
+      return await Semester.findOneAndUpdate(
+        { season, year },
+        { $setOnInsert: { season, year } },
+        { upsert: true, new: true },
+      );
+    } catch (err) {
+      if (err.code === 11000) return Semester.findOne({ season, year });
+      throw err;
+    }
+  }
+  if (!isObjectId(semesterId)) throw new ApiError(400, 'Semester not found.', 'NOT_FOUND');
+  const semester = await Semester.findById(semesterId);
+  if (!semester) throw new ApiError(404, 'Semester not found.', 'NOT_FOUND');
+  return semester;
+}
+
+async function ensureGroup(number, semester, venue) {
+  try {
+    return await Group.findOneAndUpdate(
+      { number, semester: semester._id, venue: venue._id },
+      { $setOnInsert: { number, semester: semester._id, venue: venue._id } },
+      { upsert: true, new: true },
+    );
+  } catch (err) {
+    if (err.code === 11000) {
+      return Group.findOne({ number, semester: semester._id, venue: venue._id });
+    }
+    throw err;
+  }
+}
+
 export async function applyLfeAssignment(user, { semesterId, venueId, groupId } = {}) {
-  if (semesterId && !groupId) {
-    const semester = await Semester.findById(semesterId);
-    if (!semester) throw new ApiError(404, 'Semester not found.', 'NOT_FOUND');
+  if (!user.lfe) user.lfe = {};
+  const groupNumber = parseGroupNumber(groupId);
+  const semester = semesterId ? await ensureSemester(semesterId) : null;
+  let venue = null;
+  if (venueId) {
+    venue = await Venue.findById(venueId);
+    if (!venue) throw new ApiError(404, 'Venue not found.', 'NOT_FOUND');
+  }
+
+  if (groupNumber) {
+    if (!semester) throw new ApiError(400, 'Choose an LFE semester.', 'SEMESTER_REQUIRED');
+    if (!venue) throw new ApiError(400, 'Choose a venue.', 'VENUE_REQUIRED');
+    const group = await ensureGroup(groupNumber, semester, venue);
+    user.lfe.group = group._id;
+    user.lfe.venue = venue._id;
     user.lfe.semester = semester._id;
     user.lfe.fieldVisitYear = semester.year;
-  }
-  if (venueId && !groupId) {
-    const venue = await Venue.findById(venueId);
-    if (!venue) throw new ApiError(404, 'Venue not found.', 'NOT_FOUND');
-    user.lfe.venue = venue._id;
-  }
-  if (groupId) {
+    if (!group.members.some((id) => String(id) === String(user._id))) {
+      group.members.push(user._id);
+      await group.save();
+    }
+  } else if (groupId) {
+    if (!isObjectId(groupId)) throw new ApiError(404, 'Group not found.', 'NOT_FOUND');
     const group = await Group.findById(groupId);
     if (!group) throw new ApiError(404, 'Group not found.', 'NOT_FOUND');
     user.lfe.group = group._id;
     user.lfe.venue = group.venue;
     user.lfe.semester = group.semester;
-    const semester = await Semester.findById(group.semester);
-    if (semester) user.lfe.fieldVisitYear = semester.year;
+    const groupSemester = await Semester.findById(group.semester);
+    if (groupSemester) user.lfe.fieldVisitYear = groupSemester.year;
     if (!group.members.some((id) => String(id) === String(user._id))) {
       group.members.push(user._id);
       await group.save();
     }
+  } else {
+    if (semester) {
+      user.lfe.semester = semester._id;
+      user.lfe.fieldVisitYear = semester.year;
+    }
+    if (venue) user.lfe.venue = venue._id;
   }
   await user.save();
   return user;

@@ -19,9 +19,9 @@ export const env = {
   isProd:
     process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production',
   port: Number(process.env.PORT) || 5000,
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  clientUrl: process.env.CLIENT_URL || 'https://iub-lfe-web.web.app/login',
   clientOrigins: [
-    ...(process.env.CLIENT_URL || 'http://localhost:5173')
+    ...(process.env.CLIENT_URL || 'https://iub-lfe-web.web.app/login')
       .split(',')
       .map((value) => value.trim().replace(/\/$/, ''))
       .filter(Boolean),

@@ -24,18 +24,26 @@ export async function validateImageBuffer(buffer) {
 }
 
 function useCloudinary() {
-  return (
-    env.imageProvider === 'cloudinary' &&
-    env.cloudinary.cloudName &&
-    env.cloudinary.apiKey &&
-    env.cloudinary.apiSecret
-  );
+  const hasKeys = Boolean(env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret);
+  if (!hasKeys) return false;
+  return env.imageProvider === 'cloudinary' || env.isProd || process.env.VERCEL === '1';
+}
+
+function requireCloudinaryInProduction() {
+  return env.isProd || process.env.VERCEL === '1';
 }
 
 export async function storeImage(buffer, folder = 'lfe/posts') {
   await validateImageBuffer(buffer);
   if (useCloudinary()) {
     return uploadToCloudinary(buffer, folder);
+  }
+  if (requireCloudinaryInProduction()) {
+    throw new ApiError(
+      400,
+      'Photograph uploads need Cloudinary. Add IMAGE_STORAGE_API_KEY and IMAGE_STORAGE_API_SECRET in Vercel, then redeploy.',
+      'IMAGE_STORAGE_NOT_CONFIGURED',
+    );
   }
   return uploadToLocal(buffer, folder);
 }

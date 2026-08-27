@@ -17,12 +17,17 @@ function ensureConfig() {
 
 export async function uploadToCloudinary(buffer, folder) {
   ensureConfig();
-  const sharp = await getSharp();
-  const meta = await sharp(buffer).metadata();
-  if ((meta.width || 0) < 200 || (meta.height || 0) < 200) {
-    throw new ApiError(400, 'Images must be at least 200×200 pixels.', 'IMAGE_TOO_SMALL');
+  let toUpload = buffer;
+  try {
+    const sharp = await getSharp();
+    const meta = await sharp(buffer).metadata();
+    if ((meta.width || 0) < 200 || (meta.height || 0) < 200) {
+      throw new ApiError(400, 'Images must be at least 200×200 pixels.', 'IMAGE_TOO_SMALL');
+    }
+    toUpload = await sharp(buffer).rotate().withMetadata({ exif: {} }).toBuffer();
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
   }
-  const stripped = await sharp(buffer).rotate().withMetadata({ exif: {} }).toBuffer();
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -38,7 +43,7 @@ export async function uploadToCloudinary(buffer, folder) {
       },
       (error, result) => {
         if (error || !result) {
-          reject(new ApiError(500, 'Unable to upload image.', 'IMAGE_UPLOAD_FAILED'));
+          reject(new ApiError(502, 'Unable to upload image to Cloudinary.', 'IMAGE_UPLOAD_FAILED'));
           return;
         }
         const thumb = result.eager?.[0]?.secure_url || result.secure_url;
@@ -53,7 +58,7 @@ export async function uploadToCloudinary(buffer, folder) {
         });
       },
     );
-    stream.end(stripped);
+    stream.end(toUpload);
   });
 }
 

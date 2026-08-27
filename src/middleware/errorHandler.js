@@ -11,8 +11,9 @@ export function errorHandler(err, req, res, next) {
 
   const status = err.statusCode || err.status || 500;
   const code = err.code || 'INTERNAL_ERROR';
+  const isKnown = err instanceof ApiError || Boolean(err.statusCode);
   const message =
-    status >= 500
+    status >= 500 && env.isProd && !isKnown
       ? 'Something went wrong. Please try again.'
       : err.message || 'Request failed.';
 
@@ -30,5 +31,5 @@ export function errorHandler(err, req, res, next) {
     return sendError(res, 400, 'Unable to process the uploaded file.', 'UPLOAD_ERROR');
   }
 
-  sendError(res, status, message, env.isProd && status >= 500 ? 'INTERNAL_ERROR' : code);
+  sendError(res, status, message, env.isProd && status >= 500 && !isKnown ? 'INTERNAL_ERROR' : code);
 }

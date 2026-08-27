@@ -7,6 +7,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seeds/seed.js",
+    "ensure-venues": "node src/seeds/ensureVenues.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

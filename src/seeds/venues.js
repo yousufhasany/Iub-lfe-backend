@@ -119,4 +119,14 @@ export const OFFICIAL_VENUES = [
     location: { lat: 26.0336, lng: 88.4616, address: 'Thakurgaon' },
     historicalNotes: 'Far-north Rangpur division venue.',
   },
+  {
+    name: 'Madhupur BRAC Learning Centre',
+    slug: 'madhupur-brac-learning-centre',
+    district: 'Tangail',
+    division: 'Dhaka',
+    description:
+      'The BRAC Learning Centre in Madhupur hosts LFE groups working with forest-edge communities, agriculture, and local development initiatives.',
+    location: { lat: 24.5633, lng: 90.0017, address: 'Madhupur, Tangail' },
+    historicalNotes: 'Madhupur field venue in the Dhaka division.',
+  },
 ];

@@ -37,7 +37,7 @@ async function seed() {
   await PlatformSettings.create({ key: 'default', autoApprovePosts: true });
 
   const venueDocs = [];
-  const coverColors = ['#1e3a5f', '#0f4c3a', '#7a3b2e', '#3d4f7c', '#5c3d2e', '#245c5c', '#4a3b6b', '#2e4a2e', '#6b3b4a', '#3b5c6b', '#5c4a24', '#2e3b5c'];
+  const coverColors = ['#1e3a5f', '#0f4c3a', '#7a3b2e', '#3d4f7c', '#5c3d2e', '#245c5c', '#4a3b6b', '#2e4a2e', '#6b3b4a', '#3b5c6b', '#5c4a24', '#2e3b5c', '#4b6040'];
   for (let i = 0; i < OFFICIAL_VENUES.length; i += 1) {
     const data = OFFICIAL_VENUES[i];
     const buffer = await placeholderJpeg(data.district, coverColors[i]);

@@ -1,14 +1,10 @@
 import pino from 'pino';
 
-const onVercel = process.env.VERCEL === '1';
-const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-const usePretty = !onVercel && !isProd && process.env.NODE_ENV !== 'test';
-
 const options = {
-  level: isProd || onVercel ? 'info' : 'debug',
+  level: process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? 'info' : 'debug',
 };
 
-if (usePretty) {
+if (process.env.LFE_PRETTY_LOGS === '1') {
   options.transport = {
     target: 'pino-pretty',
     options: { colorize: true, translateTime: 'SYS:standard' },

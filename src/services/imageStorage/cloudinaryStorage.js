@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
-import sharp from 'sharp';
 import { env } from '../../config/env.js';
 import { ApiError } from '../../utils/api.js';
+import { getSharp } from './loadSharp.js';
 
 let configured = false;
 
@@ -17,6 +17,7 @@ function ensureConfig() {
 
 export async function uploadToCloudinary(buffer, folder) {
   ensureConfig();
+  const sharp = await getSharp();
   const meta = await sharp(buffer).metadata();
   if ((meta.width || 0) < 200 || (meta.height || 0) < 200) {
     throw new ApiError(400, 'Images must be at least 200×200 pixels.', 'IMAGE_TOO_SMALL');

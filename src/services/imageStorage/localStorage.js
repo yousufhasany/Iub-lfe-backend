@@ -1,9 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
-import sharp from 'sharp';
 import { randomToken } from '../../utils/crypto.js';
 import { env } from '../../config/env.js';
 import { ApiError } from '../../utils/api.js';
+import { getSharp } from './loadSharp.js';
 
 const UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads');
 
@@ -12,6 +12,7 @@ async function ensureDir(dir) {
 }
 
 export async function uploadToLocal(buffer, folder) {
+  const sharp = await getSharp();
   const image = sharp(buffer).rotate();
   const meta = await image.metadata();
   if ((meta.width || 0) < 200 || (meta.height || 0) < 200) {

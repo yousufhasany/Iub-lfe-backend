@@ -1,43 +1,43 @@
-import { loadEnv } from '../src/config/env.js';
-import { createApp } from '../src/app.js';
-import { connectDb } from '../src/config/db.js';
-import { ensureBootstrapAdmin } from '../src/services/authService.js';
-import { logger } from '../src/config/logger.js';
+let app;
 
-const app = createApp();
+function sendCrash(res, err) {
+  console.error('API handler failed:', err);
+  if (res.headersSent) return;
+  res.statusCode = 500;
+  res.setHeader('content-type', 'application/json');
+  res.end(
+    JSON.stringify({
+      success: false,
+      message: 'Service unavailable.',
+      code: 'FUNCTION_CRASH',
+      error: err?.message || String(err),
+    }),
+  );
+}
 
-let bootPromise;
-
-async function boot() {
-  if (!bootPromise) {
-    bootPromise = (async () => {
-      loadEnv();
-      await connectDb();
-      await ensureBootstrapAdmin();
-    })().catch((err) => {
-      bootPromise = null;
-      throw err;
-    });
-  }
-  await bootPromise;
+async function getApp() {
+  if (app) return app;
+  const { loadEnv } = await import('../src/config/env.js');
+  const { createApp } = await import('../src/app.js');
+  const { connectDb } = await import('../src/config/db.js');
+  const { ensureBootstrapAdmin } = await import('../src/services/authService.js');
+  loadEnv();
+  await connectDb();
+  await ensureBootstrapAdmin();
+  app = createApp();
+  return app;
 }
 
 export default async function handler(req, res) {
   try {
-    await boot();
+    const expressApp = await getApp();
+    if (typeof req.url === 'string' && !req.url.startsWith('/api')) {
+      req.url = `/api${req.url === '/' || req.url === '' ? '/health' : req.url}`;
+    }
+    return expressApp(req, res);
   } catch (err) {
-    logger.error({ err }, 'API boot failed');
-    res.statusCode = 500;
-    res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify({ success: false, message: 'Service unavailable.', code: 'BOOT_FAILED' }));
-    return;
+    sendCrash(res, err);
   }
-
-  if (typeof req.url === 'string' && !req.url.startsWith('/api')) {
-    req.url = `/api${req.url === '/' ? '/health' : req.url}`;
-  }
-
-  return app(req, res);
 }
 
 export const config = {

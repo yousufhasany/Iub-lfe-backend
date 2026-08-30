@@ -41,7 +41,7 @@ export async function storeImage(buffer, folder = 'lfe/posts') {
   if (requireCloudinaryInProduction()) {
     throw new ApiError(
       400,
-      'Photograph uploads need Cloudinary. Add IMAGE_STORAGE_API_KEY and IMAGE_STORAGE_API_SECRET in Vercel, then redeploy.',
+      'Photograph uploads need Cloudinary. In Vercel set IMAGE_STORAGE_API_KEY, IMAGE_STORAGE_API_SECRET, and IMAGE_STORAGE_CLOUD_NAME (or one CLOUDINARY_URL), then Redeploy.',
       'IMAGE_STORAGE_NOT_CONFIGURED',
     );
   }

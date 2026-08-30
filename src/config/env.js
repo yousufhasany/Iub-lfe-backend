@@ -15,10 +15,21 @@ function originOnly(value) {
   }
 }
 
+function firstText(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
 function parseCloudinaryUrl(url) {
   if (!url) return {};
+  let raw = String(url).trim().replace(/^['"]|['"]$/g, '');
+  raw = raw.replace(/^(CLOUDINARY_URL=)+/i, '');
+  const embedded = raw.indexOf('cloudinary://');
+  if (embedded > 0) raw = raw.slice(embedded);
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(raw);
     return {
       cloudName: parsed.hostname || undefined,
       apiKey: parsed.username ? decodeURIComponent(parsed.username) : undefined,
@@ -29,7 +40,20 @@ function parseCloudinaryUrl(url) {
   }
 }
 
-const cloudinaryFromUrl = parseCloudinaryUrl(process.env.CLOUDINARY_URL);
+function resolveCloudinary() {
+  const fromUrl = parseCloudinaryUrl(process.env.CLOUDINARY_URL);
+  return {
+    cloudName:
+      firstText(
+        process.env.IMAGE_STORAGE_CLOUD_NAME,
+        process.env.CLOUDINARY_CLOUD_NAME,
+        fromUrl.cloudName,
+        'p322twby',
+      ),
+    apiKey: firstText(process.env.IMAGE_STORAGE_API_KEY, process.env.CLOUDINARY_API_KEY, fromUrl.apiKey),
+    apiSecret: firstText(process.env.IMAGE_STORAGE_API_SECRET, process.env.CLOUDINARY_API_SECRET, fromUrl.apiSecret),
+  };
+}
 
 export function loadEnv() {
   const missing = required.filter((key) => !process.env[key]);
@@ -62,11 +86,8 @@ export const env = {
   requireIubEmail: process.env.REQUIRE_IUB_EMAIL === 'true',
   autoApprovePosts: process.env.AUTO_APPROVE_POSTS !== 'false',
   imageProvider: process.env.IMAGE_STORAGE_PROVIDER || 'cloudinary',
-  cloudinary: {
-    cloudName:
-      process.env.IMAGE_STORAGE_CLOUD_NAME || cloudinaryFromUrl.cloudName || 'p322twby',
-    apiKey: process.env.IMAGE_STORAGE_API_KEY || cloudinaryFromUrl.apiKey,
-    apiSecret: process.env.IMAGE_STORAGE_API_SECRET || cloudinaryFromUrl.apiSecret,
+  get cloudinary() {
+    return resolveCloudinary();
   },
   smtp: {
     host: process.env.SMTP_HOST,

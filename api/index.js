@@ -1,3 +1,5 @@
+import { restoreMultipartRequest } from '../src/middleware/restoreMultipart.js';
+
 let app;
 
 function sendCrash(res, err) {
@@ -34,7 +36,8 @@ export default async function handler(req, res) {
     if (typeof req.url === 'string' && !req.url.startsWith('/api')) {
       req.url = `/api${req.url === '/' || req.url === '' ? '/health' : req.url}`;
     }
-    return expressApp(req, res);
+    const incoming = restoreMultipartRequest(req);
+    return expressApp(incoming, res);
   } catch (err) {
     sendCrash(res, err);
   }

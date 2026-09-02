@@ -10,6 +10,9 @@ import { logger } from './config/logger.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import routes from './routes/index.js';
+import { skipSanitizeForMultipart } from './middleware/restoreMultipart.js';
+
+const sanitize = mongoSanitize();
 
 export function createApp() {
   const app = express();
@@ -34,7 +37,10 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
-  app.use(mongoSanitize());
+  app.use((req, res, next) => {
+    if (skipSanitizeForMultipart(req)) return next();
+    return sanitize(req, res, next);
+  });
   app.use(globalLimiter);
   app.use(
     pinoHttp({

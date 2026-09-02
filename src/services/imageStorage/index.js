@@ -23,9 +23,13 @@ export async function validateImageBuffer(buffer) {
   return detected.mime;
 }
 
+function cloudinaryKeysPresent() {
+  const { cloudName, apiKey, apiSecret } = env.cloudinary;
+  return Boolean(cloudName && apiKey && apiSecret);
+}
+
 function useCloudinary() {
-  const hasKeys = Boolean(env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret);
-  if (!hasKeys) return false;
+  if (!cloudinaryKeysPresent()) return false;
   return env.imageProvider === 'cloudinary' || env.isProd || process.env.VERCEL === '1';
 }
 

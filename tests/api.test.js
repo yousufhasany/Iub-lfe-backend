@@ -343,3 +343,26 @@ describe('LFE API', () => {
     expect(suspended.body.data.user.status).toBe('suspended');
   });
 });
+
+describe('Vercel multipart restore', () => {
+  it('rebuilds a readable stream from a buffered body', async () => {
+    const { restoreMultipartRequest } = await import('../src/middleware/restoreMultipart.js');
+    const body = Buffer.from('fake-multipart-bytes');
+    const req = restoreMultipartRequest({
+      headers: { 'content-type': 'multipart/form-data; boundary=abc' },
+      method: 'POST',
+      url: '/api/posts',
+      body,
+    });
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    expect(Buffer.concat(chunks).equals(body)).toBe(true);
+    expect(req.method).toBe('POST');
+  });
+
+  it('leaves non-multipart requests unchanged', async () => {
+    const { restoreMultipartRequest } = await import('../src/middleware/restoreMultipart.js');
+    const original = { headers: { 'content-type': 'application/json' }, body: { a: 1 } };
+    expect(restoreMultipartRequest(original)).toBe(original);
+  });
+});

@@ -35,14 +35,25 @@ export async function uploadToCloudinary(buffer, folder) {
         folder,
         resource_type: 'image',
         overwrite: false,
-        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
         eager: [
-          { width: 400, height: 400, crop: 'fill', fetch_format: 'auto', quality: 'auto' },
-          { width: 1200, crop: 'limit', fetch_format: 'webp', quality: 'auto' },
+          { width: 400, height: 400, crop: 'fill', quality: 'auto' },
+          { width: 1200, crop: 'limit', format: 'webp', quality: 'auto' },
         ],
       },
       (error, result) => {
         if (error || !result) {
+          const detail = error?.message || 'Unknown Cloudinary error';
+          console.error('Cloudinary upload failed:', detail);
+          if (error?.http_code === 401 || /invalid.*(api|signature|auth)/i.test(detail)) {
+            reject(
+              new ApiError(
+                502,
+                'Cloudinary rejected the API credentials. Check IMAGE_STORAGE_API_KEY and IMAGE_STORAGE_API_SECRET (or CLOUDINARY_URL) in Vercel, then Redeploy.',
+                'IMAGE_UPLOAD_FAILED',
+              ),
+            );
+            return;
+          }
           reject(new ApiError(502, 'Unable to upload image to Cloudinary.', 'IMAGE_UPLOAD_FAILED'));
           return;
         }

@@ -26,8 +26,16 @@ export const me = asyncHandler(async (req, res) => {
 });
 
 export const forgotPassword = asyncHandler(async (req, res) => {
-  await authService.requestPasswordReset(req.body.email);
-  sendSuccess(res, {}, 'If that email exists, a reset link has been sent.');
+  const result = await authService.requestPasswordReset(req.body);
+  const message =
+    result.delivery === 'email'
+      ? 'If that email exists, a reset link has been sent.'
+      : result.unmatched
+        ? 'Those details did not match. Check your name and student ID.'
+        : result.delivery === 'link'
+          ? 'Verified. Choose a new password.'
+          : 'Confirm your name and student ID to reset your password.';
+  sendSuccess(res, result, message);
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {

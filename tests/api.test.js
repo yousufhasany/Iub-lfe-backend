@@ -94,6 +94,45 @@ describe('LFE API', () => {
     expect(me.body.data.user.email).toBe(student.email);
   });
 
+  it('resets a password after identity verification when email is not configured', async () => {
+    const student = await makeUser({
+      email: 'resetme@demo.iub.edu.bd',
+      fullName: 'Reset Me',
+      studentId: 'RST009',
+    });
+    const start = await request(app).post('/api/auth/forgot-password').send({
+      email: student.email,
+    });
+    expect(start.status).toBe(200);
+    expect(start.body.data.delivery).toBe('identity');
+
+    const verify = await request(app).post('/api/auth/forgot-password').send({
+      email: student.email,
+      fullName: 'Reset Me',
+      studentId: 'RST009',
+    });
+    expect(verify.status).toBe(200);
+    expect(verify.body.data.resetToken).toBeTruthy();
+
+    const reset = await request(app).post('/api/auth/reset-password').send({
+      token: verify.body.data.resetToken,
+      password: 'NewPass123!',
+    });
+    expect(reset.status).toBe(200);
+
+    const oldLogin = await request(app).post('/api/auth/login').send({
+      email: student.email,
+      password: 'Password123!',
+    });
+    expect(oldLogin.status).toBe(401);
+
+    const newLogin = await request(app).post('/api/auth/login').send({
+      email: student.email,
+      password: 'NewPass123!',
+    });
+    expect(newLogin.status).toBe(200);
+  });
+
   it('rejects invalid passwords', async () => {
     await makeUser({ email: 'rahim@demo.iub.edu.bd' });
     const res = await request(app).post('/api/auth/login').send({

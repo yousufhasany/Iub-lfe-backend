@@ -28,6 +28,8 @@ export const loginSchema = z.object({
 export const forgotPasswordSchema = z.object({
   body: z.object({
     email: z.string().email().toLowerCase(),
+    studentId: z.string().trim().max(20).optional(),
+    fullName: z.string().trim().max(80).optional(),
   }),
 });
 

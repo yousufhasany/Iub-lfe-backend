@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 import { ApiError } from '../utils/api.js';
 import { hashToken, randomToken } from '../utils/crypto.js';
 import { serializeUser } from '../utils/serialize.js';
-import { sendPasswordResetEmail, sendVerificationEmail } from './emailService.js';
+import { isMailConfigured, sendPasswordResetEmail, sendVerificationEmail } from './emailService.js';
 import { signToken } from '../middleware/auth.js';
 
 const IUB_EMAIL = /@iub\.edu\.bd$/i;
@@ -39,7 +39,7 @@ export async function registerUser({ fullName, email, password, studentId, depar
     await applyLfeAssignment(user, { semesterId, venueId, groupId });
   }
 
-  if (env.requireIubEmail || env.smtp.host) {
+  if (env.requireIubEmail || isMailConfigured()) {
     await sendVerificationEmail(user, verifyToken);
   }
 
@@ -61,19 +61,65 @@ export async function loginUser({ email, password }) {
   return { user: serializeUser(user, user, { includeEmail: true }), token };
 }
 
-export async function requestPasswordReset(email) {
-  const user = await User.findOne({ email });
-  if (!user) return;
+function normalizeIdentity(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function identityMatches(user, { studentId, fullName }) {
+  const nameOk = Boolean(normalizeIdentity(fullName)) && normalizeIdentity(fullName) === normalizeIdentity(user.profile?.fullName);
+  if (!nameOk) return false;
+  const storedId = user.profile?.studentId;
+  if (storedId) return normalizeIdentity(studentId) === normalizeIdentity(storedId);
+  return true;
+}
+
+async function issueResetToken(userId) {
   const token = randomToken();
-  user.resetPasswordTokenHash = hashToken(token);
-  user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
-  await user.save();
-  await sendPasswordResetEmail(user, token);
+  await User.updateOne(
+    { _id: userId },
+    {
+      $set: {
+        resetPasswordTokenHash: hashToken(token),
+        resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    },
+  );
+  return token;
+}
+
+export async function requestPasswordReset({ email, studentId, fullName }) {
+  const user = await User.findOne({ email });
+  const wantsIdentity = Boolean(normalizeIdentity(fullName) || normalizeIdentity(studentId));
+
+  if (isMailConfigured() && !wantsIdentity) {
+    if (!user) return { delivery: 'email' };
+    const token = await issueResetToken(user._id);
+    try {
+      const sent = await sendPasswordResetEmail(user, token);
+      if (sent) return { delivery: 'email' };
+    } catch (err) {
+      console.error('Password reset email failed:', err);
+    }
+  }
+
+  if (!wantsIdentity) {
+    return { delivery: 'identity' };
+  }
+
+  if (user && identityMatches(user, { studentId, fullName })) {
+    const resetToken = await issueResetToken(user._id);
+    return { delivery: 'link', resetToken };
+  }
+
+  return { delivery: 'identity', unmatched: true };
 }
 
 export async function resetPassword(token, password) {
   const user = await User.findOne({
-    resetPasswordTokenHash: hashToken(token),
+    resetPasswordTokenHash: hashToken(String(token || '').trim()),
     resetPasswordExpires: { $gt: new Date() },
   }).select('+resetPasswordTokenHash +passwordHash');
   if (!user) throw new ApiError(400, 'This reset link is invalid or has expired.', 'INVALID_RESET_TOKEN');

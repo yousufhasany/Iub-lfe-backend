@@ -13,13 +13,20 @@ async function ensureVenues() {
   for (const data of OFFICIAL_VENUES) {
     const existing = await Venue.findOne({ slug: data.slug });
     if (existing) {
-      existing.name = data.name;
-      existing.district = data.district;
-      existing.division = data.division;
-      existing.description = data.description;
-      existing.location = data.location;
-      existing.historicalNotes = data.historicalNotes;
-      await existing.save();
+      await Venue.updateOne(
+        { _id: existing._id },
+        {
+          $set: {
+            name: data.name,
+            district: data.district,
+            division: data.division,
+            description: data.description,
+            location: data.location,
+            historicalNotes: data.historicalNotes,
+          },
+          $unset: { coverImage: 1 },
+        },
+      );
       updated += 1;
       logger.info({ slug: data.slug }, 'Updated venue');
     } else {

@@ -149,6 +149,18 @@ export async function updateAvatar(user, file) {
   return getMe(fresh);
 }
 
+export async function updateCover(user, file) {
+  if (!file) throw new ApiError(400, 'Please choose a cover photograph.', 'IMAGE_REQUIRED');
+  const stored = await storeImage(file.buffer, 'lfe/covers');
+  const fresh = await User.findById(user._id);
+  if (fresh.profile.coverImage?.publicId) {
+    await removeImage(fresh.profile.coverImage);
+  }
+  fresh.profile.coverImage = stored;
+  await fresh.save();
+  return getMe(fresh);
+}
+
 export async function listStudents({ page = 1, limit = 20, q, venueId, semesterId, groupId }, viewer) {
   const filter = { role: 'student', status: 'active' };
   if (q) {

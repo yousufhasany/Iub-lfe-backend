@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema(
       batch: { type: String, trim: true },
       bio: { type: String, maxlength: 500, default: '' },
       avatar: avatarSchema,
+      coverImage: avatarSchema,
     },
     lfe: {
       semester: { type: mongoose.Schema.Types.ObjectId, ref: 'Semester' },

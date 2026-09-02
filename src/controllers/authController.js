@@ -6,13 +6,13 @@ import { getMe } from '../services/userService.js';
 export const register = asyncHandler(async (req, res) => {
   const { user, token } = await authService.registerUser(req.body);
   setAuthCookie(res, token);
-  sendSuccess(res, { user }, 'Account created.', 201);
+  sendSuccess(res, { user, token }, 'Account created.', 201);
 });
 
 export const login = asyncHandler(async (req, res) => {
   const { user, token } = await authService.loginUser(req.body);
   setAuthCookie(res, token);
-  sendSuccess(res, { user }, 'Signed in.');
+  sendSuccess(res, { user, token }, 'Signed in.');
 });
 
 export const logout = asyncHandler(async (req, res) => {

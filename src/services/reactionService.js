@@ -2,6 +2,7 @@ import { Reaction } from '../models/Reaction.js';
 import { Post } from '../models/Post.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/api.js';
+import { serializeUser } from '../utils/serialize.js';
 import { notify } from './notificationService.js';
 
 const TYPES = ['like', 'love', 'smile', 'clap'];
@@ -19,6 +20,51 @@ async function recount(postId) {
   }
   const post = await Post.findByIdAndUpdate(postId, { reactionCount: total, reactionBreakdown: breakdown }, { new: true });
   return { reactionCount: total, reactionBreakdown: breakdown, post };
+}
+
+function serializeReaction(doc, viewer) {
+  return {
+    id: String(doc._id),
+    type: doc.type,
+    createdAt: doc.createdAt,
+    user: serializeUser(doc.user, viewer),
+    post: doc.post
+      ? {
+          id: String(doc.post._id || doc.post),
+          caption: doc.post.caption || '',
+          image: doc.post.images?.[0] || null,
+        }
+      : null,
+  };
+}
+
+export async function listPostReactions(postId, viewer) {
+  const post = await Post.findById(postId);
+  if (!post) throw new ApiError(404, 'Post not found.', 'NOT_FOUND');
+  const staff = viewer?.role === 'admin' || viewer?.role === 'teacher';
+  if (!staff && (post.moderationStatus !== 'approved' || post.visibility !== 'public')) {
+    throw new ApiError(404, 'Post not found.', 'NOT_FOUND');
+  }
+  const items = await Reaction.find({ post: post._id })
+    .populate('user', 'profile.fullName profile.avatar profile.studentId role stats lfe')
+    .sort({ createdAt: -1 })
+    .limit(50);
+  return items.map((item) => serializeReaction(item, viewer));
+}
+
+export async function listAuthorReactions(authorId, viewer) {
+  if (!authorId) return [];
+  const posts = await Post.find({
+    author: authorId,
+    moderationStatus: 'approved',
+    visibility: 'public',
+  }).select('_id');
+  const items = await Reaction.find({ post: { $in: posts.map((p) => p._id) } })
+    .populate('user', 'profile.fullName profile.avatar profile.studentId role stats lfe')
+    .populate('post', 'caption images')
+    .sort({ createdAt: -1 })
+    .limit(24);
+  return items.map((item) => serializeReaction(item, viewer));
 }
 
 export async function setReaction(user, postId, type = 'like') {

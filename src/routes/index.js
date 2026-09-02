@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
+import { optionalAuth } from '../middleware/auth.js';
+import * as content from '../controllers/contentController.js';
 import authRoutes from './authRoutes.js';
 import userRoutes from './userRoutes.js';
 import { venueRoutes, semesterRoutes, groupRoutes } from './catalogRoutes.js';
@@ -38,6 +40,7 @@ router.use('/posts', postRoutes);
 router.use('/comments', commentRoutes);
 router.use('/search', searchRoutes);
 router.use('/explore', exploreRoutes);
+router.get('/home', optionalAuth, content.home);
 router.use('/reports', reportRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin', adminRoutes);

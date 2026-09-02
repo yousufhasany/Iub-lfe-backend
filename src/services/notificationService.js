@@ -1,4 +1,5 @@
 import { Notification } from '../models/Notification.js';
+import { serializeUser } from '../utils/serialize.js';
 
 export async function notify({ recipient, actor, type, post, comment, message }) {
   if (!recipient || (actor && String(recipient) === String(actor))) return;
@@ -17,7 +18,28 @@ export async function listNotifications(user, { page = 1, limit = 20 }) {
     Notification.countDocuments({ recipient: user._id }),
     Notification.countDocuments({ recipient: user._id, read: false }),
   ]);
-  return { items, page, limit, total, pages: Math.ceil(total / limit), unread };
+  return {
+    items: items.map((n) => ({
+      id: String(n._id),
+      type: n.type,
+      message: n.message,
+      read: n.read,
+      createdAt: n.createdAt,
+      actor: serializeUser(n.actor, user),
+      post: n.post
+        ? {
+            id: String(n.post._id),
+            caption: n.post.caption || '',
+            image: n.post.images?.[0] || null,
+          }
+        : null,
+    })),
+    page,
+    limit,
+    total,
+    pages: Math.ceil(total / limit),
+    unread,
+  };
 }
 
 export async function markRead(user, id) {

@@ -79,6 +79,19 @@ describe('LFE API', () => {
     });
     expect(login.status).toBe(200);
     expect(login.body.data.user.profile.fullName).toBe('Rahim Demo');
+    expect(login.body.data.token).toBeTruthy();
+  });
+
+  it('authenticates with a bearer token when cookies are missing', async () => {
+    const student = await makeUser({ email: 'iphone@demo.iub.edu.bd' });
+    const login = await request(app).post('/api/auth/login').send({
+      email: student.email,
+      password: 'Password123!',
+    });
+    const token = login.body.data.token;
+    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+    expect(me.status).toBe(200);
+    expect(me.body.data.user.email).toBe(student.email);
   });
 
   it('rejects invalid passwords', async () => {

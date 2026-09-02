@@ -25,7 +25,7 @@ async function getApp() {
   const { ensureBootstrapAdmin } = await import('../src/services/authService.js');
   loadEnv();
   await connectDb();
-  await ensureBootstrapAdmin();
+  ensureBootstrapAdmin().catch((err) => console.error('Bootstrap admin failed:', err));
   app = createApp();
   return app;
 }

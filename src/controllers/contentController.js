@@ -41,6 +41,11 @@ export const unreact = asyncHandler(async (req, res) => {
   sendSuccess(res, data);
 });
 
+export const listReactions = asyncHandler(async (req, res) => {
+  const items = await reactionService.listPostReactions(req.params.id, req.user);
+  sendSuccess(res, { items });
+});
+
 export const listComments = asyncHandler(async (req, res) => {
   const data = await commentService.listComments(
     req.params.id,
@@ -72,6 +77,11 @@ export const search = asyncHandler(async (req, res) => {
 
 export const explore = asyncHandler(async (req, res) => {
   const data = await searchService.explore(req.user);
+  sendSuccess(res, data);
+});
+
+export const home = asyncHandler(async (req, res) => {
+  const data = await searchService.homePreview(req.user);
   sendSuccess(res, data);
 });
 

@@ -1,5 +1,6 @@
 import { asyncHandler, sendSuccess } from '../utils/api.js';
 import * as userService from '../services/userService.js';
+import * as reactionService from '../services/reactionService.js';
 
 export const updateMe = asyncHandler(async (req, res) => {
   const user = await userService.updateProfile(req.user, req.body);
@@ -9,6 +10,11 @@ export const updateMe = asyncHandler(async (req, res) => {
 export const updateAvatar = asyncHandler(async (req, res) => {
   const user = await userService.updateAvatar(req.user, req.file);
   sendSuccess(res, { user }, 'Profile photograph updated.');
+});
+
+export const updateCover = asyncHandler(async (req, res) => {
+  const user = await userService.updateCover(req.user, req.file);
+  sendSuccess(res, { user }, 'Cover photograph updated.');
 });
 
 export const listStudents = asyncHandler(async (req, res) => {
@@ -29,4 +35,9 @@ export const listStudents = asyncHandler(async (req, res) => {
 export const getStudent = asyncHandler(async (req, res) => {
   const user = await userService.getStudent(req.params.id, req.user);
   sendSuccess(res, { user });
+});
+
+export const listStudentReactions = asyncHandler(async (req, res) => {
+  const items = await reactionService.listAuthorReactions(req.params.id, req.user);
+  sendSuccess(res, { items });
 });

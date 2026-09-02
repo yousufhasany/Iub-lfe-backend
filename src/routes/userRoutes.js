@@ -9,8 +9,10 @@ import { uploadLimiter } from '../middleware/rateLimits.js';
 const router = Router();
 
 router.get('/students', optionalAuth, users.listStudents);
+router.get('/students/:id/reactions', optionalAuth, users.listStudentReactions);
 router.get('/students/:id', optionalAuth, users.getStudent);
 router.patch('/me', requireAuth, validate(updateProfileSchema), users.updateMe);
 router.post('/me/avatar', requireAuth, uploadLimiter, upload.single('avatar'), users.updateAvatar);
+router.post('/me/cover', requireAuth, uploadLimiter, upload.single('cover'), users.updateCover);
 
 export default router;

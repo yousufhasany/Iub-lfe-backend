@@ -9,23 +9,25 @@ export function signToken(user) {
   });
 }
 
-export function setAuthCookie(res, token) {
-  res.cookie(env.cookieName, token, {
+function cookieOptions() {
+  return {
     httpOnly: true,
     secure: env.isProd,
     sameSite: env.isProd ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
+    ...(env.isProd ? { partitioned: true } : {}),
+  };
+}
+
+export function setAuthCookie(res, token) {
+  res.cookie(env.cookieName, token, {
+    ...cookieOptions(),
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
 export function clearAuthCookie(res) {
-  res.clearCookie(env.cookieName, {
-    httpOnly: true,
-    secure: env.isProd,
-    sameSite: env.isProd ? 'none' : 'lax',
-    path: '/',
-  });
+  res.clearCookie(env.cookieName, cookieOptions());
 }
 
 export async function optionalAuth(req, res, next) {

@@ -30,6 +30,7 @@ export function serializeUser(user, viewer = null, { includeEmail = false } = {}
       batch: doc.profile?.batch || '',
       bio: doc.profile?.bio || '',
       avatar: doc.profile?.avatar || null,
+      coverImage: doc.profile?.coverImage || null,
     },
     lfe: {
       semester: doc.lfe?.semester || null,

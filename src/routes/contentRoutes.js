@@ -26,6 +26,7 @@ router.get('/:id', optionalAuth, content.getPost);
 router.patch('/:id', requireAuth, validate(updatePostSchema), content.updatePost);
 router.delete('/:id', requireAuth, content.deletePost);
 
+router.get('/:id/reactions', optionalAuth, content.listReactions);
 router.post('/:id/reactions', requireAuth, reactionLimiter, validate(reactionSchema), content.react);
 router.delete('/:id/reactions', requireAuth, reactionLimiter, content.unreact);
 

@@ -2,6 +2,7 @@ import { Post } from '../models/Post.js';
 import { User } from '../models/User.js';
 import { Venue } from '../models/Venue.js';
 import { Group } from '../models/Group.js';
+import { Semester } from '../models/Semester.js';
 import { serializeUser } from '../utils/serialize.js';
 import { serializePost } from './postService.js';
 
@@ -130,5 +131,33 @@ export async function explore(viewer) {
     featured: featured.map((p) => serializePost(p, viewer)),
     popularVenues: popularVenues.map((v) => ({ venue: venueMap.get(String(v._id)), photos: v.photos })),
     recentGroups,
+  };
+}
+
+export async function homePreview(viewer) {
+  const filter = { moderationStatus: 'approved', visibility: 'public' };
+  const populate = [
+    { path: 'author', select: 'profile.fullName profile.avatar profile.studentId role' },
+    { path: 'venue', select: 'name slug district' },
+    { path: 'group', select: 'number' },
+    { path: 'semester', select: 'year season' },
+  ];
+
+  const [venues, posts, semesters] = await Promise.all([
+    Venue.find().sort({ district: 1, name: 1 }).select('name slug district').lean(),
+    Post.find(filter).populate(populate).sort({ createdAt: -1 }).limit(6),
+    Semester.find().sort({ year: -1, season: 1 }).limit(12).lean(),
+  ]);
+
+  const yearsMap = {};
+  for (const semester of semesters) {
+    if (!yearsMap[semester.year]) yearsMap[semester.year] = { year: semester.year, seasons: [] };
+    yearsMap[semester.year].seasons.push(semester);
+  }
+
+  return {
+    venues,
+    posts: posts.map((post) => serializePost(post, viewer)),
+    archive: { years: Object.values(yearsMap) },
   };
 }
